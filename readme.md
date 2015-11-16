@@ -134,6 +134,10 @@ Now you can execute the upload and indexing of the test data with *curl* as prin
 
 Use the script `rm-swarm.sh` to remove all created Docker machines but take care about that you have configured in the script the same amount of nodes as in the create script.
 
+# TODO
+* Show how to use Docker Compose with Swarm and Overlay Network.
+
+
 # License
 
 Apache License, Version 2.0 
