@@ -9,7 +9,7 @@ This is a pure airport hack. Please don't make me responsible if something goes 
 Suggestions are always welcome.
 
 # Thanks too...
-This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee). 
+This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee) and the nice [Elasticsearch SRV plugin](https://github.com/github/elasticsearch-srv-discovery). 
 
 # Creating Swarm Cluster
 
@@ -102,6 +102,8 @@ This script installs two Elasticsearch Plugins, too:
 * BigDesk ([Homepage](http://bigdesk.org))
 * Paramedic ([Homepage](https://github.com/karmi/elasticsearch-paramedic))
 
+In addition, on each elasticsearch node the `elasticsearch-srv-discovery` plugin will be installed. This plugin is used to retrieve the data about all nodes in the cluster. They get registered during startup by the shell script using the Consul REST API. 
+
 Now, lets start the Elasticsearch cluster:
 
 ```
@@ -133,6 +135,8 @@ Now you can execute the upload and indexing of the test data with *curl* as prin
 # Deprovision
 
 Use the script `rm-swarm.sh` to remove all created Docker machines but take care about that you have configured in the script the same amount of nodes as in the create script.
+
+In addition, you can use the script `rm_es_cluster.sh` to remove only the elasticsearch containers and deregister them.
 
 # TODO
 * Show how to use Docker Compose with Swarm and Overlay Network.

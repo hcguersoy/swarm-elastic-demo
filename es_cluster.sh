@@ -42,6 +42,15 @@ if [ -z "${DOCKER_HOST}" ]; then
   exit 1
 fi
 
+# pull elasticsearch image
+echo "Pulling image $ELASTIC_IMAGE"
+$DOCKER pull $ELASTIC_IMAGE
+
+# getting consul IP
+echo "Retrieving Consul IP..."
+CONSUL_IP=$(docker-machine ip consul)
+echo "Consul IP is $CONSUL_IP"
+
 # here we start the es nodes
 # we suppose that the multihost network uses the 10.0.0.x IP range
 # and set the first instance IPs as the seed nodes for the es cluster
@@ -57,14 +66,27 @@ do
             --memory-swappiness=0 \
             --restart=unless-stopped \
             $ELASTIC_IMAGE \
-            elasticsearch -Des.node.name="es-$node" \
+            /bin/bash -c "plugin install srv-discovery --url https://github.com/github/elasticsearch-srv-discovery/releases/download/1.5.0/elasticsearch-srv-discovery-1.5.0.zip
+            elasticsearch -Des.node.name=es-$node \
                           -Des.cluster.name=$CLUSTER_NAME \
                           -Des.network.host=0.0.0.0 \
-                          -Des.discovery.zen.ping.multicast.enabled=false \
-                          -Des.discovery.zen.ping.unicast.hosts=10.0.0.2,10.0.0.3 \
                           -Des.index.number_of_shards=$AMOUNT_SHARDS \
-                          -Des.index.number_of_replicas=$AMOUNT_REPLICAS
+                          -Des.index.number_of_replicas=$AMOUNT_REPLICAS \
+                          -Des.discovery.zen.ping.multicast.enabled=false \
+                          -Des.discovery.type=srv \
+                          -Des.discovery.srv.query=elastic.service.consul \
+                          -Des.discovery.srv.servers=${CONSUL_IP}:8600 \
+                          -Des.discovery.srv.protocol=udp"
 
+    ES_IP=$(docker exec es-${node} ip addr | awk '/inet/ && /eth0/{sub(/\/.*$/,"",$2); print $2}')
+    echo "IP of es-${node} is ${ES_IP}"
+    
+    echo "Registering node in Consul"
+    curl -X PUT \
+      -d "{\"Node\": \"es-${node}\", \"Address\": \"${ES_IP}\", \"Service\": {\"ID\": \"elastic-${node}\", \"Service\": \"elastic\", \"ServiceAddress\": \"${ES_IP}\", \"Port\": 9300}}" \
+      http://${CONSUL_IP}:8500/v1/catalog/register
+    echo ""
+    
     if [ $node -eq 1 ]
     then
         echo "Installing bigdesk"

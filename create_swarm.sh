@@ -63,6 +63,7 @@ $DOCKER $(docker-machine config consul) run \
                                        -p 8500:8500 \
                                        -p 8400:8400 \
                                        -p 8600:53/udp \
+                                       -p 8653:53/tcp \
                                        -h consul \
                                        progrium/consul -server -bootstrap-expect 1 -ui-dir /ui \
                                        || { echo 'Installation of Consul failed' ; exit 1; }
@@ -100,6 +101,8 @@ wait
 echo "Creating overlay network"
 eval $(docker-machine env --swarm swarm-1)
 $DOCKER network create -d overlay multihost
+
+echo "Access to Consul UI via http://$(docker-machine ip consul):8500/ui"
 
 echo " **** Finished creating VMs and setting up Docker Swarm ****  "
 
