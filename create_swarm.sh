@@ -50,6 +50,11 @@ DRIVER_SPECIFIC_DO="--driver digitalocean --digitalocean-access-token=$DIGITAL_O
 DRIVER_DEFINITION=$DRIVER_SPECIFIC_DO
 # DRIVER_DEFINITION=$DRIVER_SPECIFIC_VB
 
+# Consul DNS UDP Port
+CONSUL_PORT_UDP=8600
+#... and TCP 
+CONSUL_PORT_TCP=8653
+
 # create a node for consul, name it consul
 echo "==> Create a node for consul..."
 docker-machine create \
@@ -62,8 +67,8 @@ $DOCKER $(docker-machine config consul) run \
                                        -d \
                                        -p 8500:8500 \
                                        -p 8400:8400 \
-                                       -p 8600:53/udp \
-                                       -p 8653:53/tcp \
+                                       -p ${CONSUL_PORT_UDP}:53/udp \
+                                       -p ${CONSUL_PORT_TCP}:53/tcp \
                                        -h consul \
                                        progrium/consul -server -bootstrap-expect 1 -ui-dir /ui \
                                        || { echo 'Installation of Consul failed' ; exit 1; }

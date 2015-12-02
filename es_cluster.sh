@@ -32,6 +32,18 @@ BIGDESK_VERSION=2.5.0
 # and the cluster name
 CLUSTER_NAME=swarmones
 
+# Consul DNS UDP Port
+CONSUL_PORT_UDP=8600
+#... and TCP 
+CONSUL_PORT_TCP=8653
+
+# which port should be used?
+CONSUL_PORT=$CONSUL_PORT_UDP
+
+#SRV Protocol, either tcp or udp
+# SRV_PROTOCOL="tcp"
+SRV_PROTOCOL="udp"
+
 # set docker host coordinates correctly
 eval $($DOCKER_MACHINE env --swarm swarm-1)
 
@@ -50,6 +62,9 @@ $DOCKER pull $ELASTIC_IMAGE
 echo "Retrieving Consul IP..."
 CONSUL_IP=$(docker-machine ip consul)
 echo "Consul IP is $CONSUL_IP"
+
+#At which level discovery should log
+DISCOVERY_LOGLEVEL=TRACE
 
 # here we start the es nodes
 # we suppose that the multihost network uses the 10.0.0.x IP range
@@ -75,9 +90,11 @@ do
                           -Des.discovery.zen.ping.multicast.enabled=false \
                           -Des.discovery.type=srv \
                           -Des.discovery.srv.query=elastic.service.consul \
-                          -Des.discovery.srv.servers=${CONSUL_IP}:8600 \
-                          -Des.discovery.srv.protocol=udp"
+                          -Des.discovery.srv.servers=${CONSUL_IP}:${CONSUL_PORT} \
+                          -Des.discovery.srv.protocol=${SRV_PROTOCOL} \
+                          -Des.logger.discovery=${DISCOVERY_LOGLEVEL}"
 
+    # may you've to change here the interface from eth0 to eth1 on boot2docker
     ES_IP=$(docker exec es-${node} ip addr | awk '/inet/ && /eth0/{sub(/\/.*$/,"",$2); print $2}')
     echo "IP of es-${node} is ${ES_IP}"
     
@@ -86,7 +103,7 @@ do
       -d "{\"Node\": \"es-${node}\", \"Address\": \"${ES_IP}\", \"Service\": {\"ID\": \"elastic-${node}\", \"Service\": \"elastic\", \"ServiceAddress\": \"${ES_IP}\", \"Port\": 9300}}" \
       http://${CONSUL_IP}:8500/v1/catalog/register
     echo ""
-    
+
     if [ $node -eq 1 ]
     then
         echo "Installing bigdesk"
