@@ -29,6 +29,10 @@ ELASTIC_IMAGE="elasticsearch:1.7.3"
 # The BigDesk Version
 BIGDESK_VERSION=2.5.0
 
+# The elasticsearch-srv-discovery plugin version
+# For TCP support, you need at least 1.5.1
+SRV_DISCOVERY_VERSION=1.5.1
+
 # and the cluster name
 CLUSTER_NAME=swarmones
 
@@ -38,11 +42,11 @@ CONSUL_PORT_UDP=8600
 CONSUL_PORT_TCP=8653
 
 # which port should be used?
-CONSUL_PORT=$CONSUL_PORT_UDP
+CONSUL_PORT=$CONSUL_PORT_TCP
 
 #SRV Protocol, either tcp or udp
-# SRV_PROTOCOL="tcp"
-SRV_PROTOCOL="udp"
+SRV_PROTOCOL="tcp"
+# SRV_PROTOCOL="udp"
 
 # set docker host coordinates correctly
 eval $($DOCKER_MACHINE env --swarm swarm-1)
@@ -81,7 +85,7 @@ do
             --memory-swappiness=0 \
             --restart=unless-stopped \
             $ELASTIC_IMAGE \
-            /bin/bash -c "plugin install srv-discovery --url https://github.com/github/elasticsearch-srv-discovery/releases/download/1.5.0/elasticsearch-srv-discovery-1.5.0.zip
+            /bin/bash -c "plugin install srv-discovery --url https://github.com/github/elasticsearch-srv-discovery/releases/download/${SRV_DISCOVERY_VERSION}/elasticsearch-srv-discovery-${SRV_DISCOVERY_VERSION}.zip
             elasticsearch -Des.node.name=es-$node \
                           -Des.cluster.name=$CLUSTER_NAME \
                           -Des.network.host=0.0.0.0 \
@@ -113,15 +117,10 @@ do
     fi
 done
 
-echo "Downloading test data"
-$DOCKER_MACHINE ssh swarm-1 "wget https://www.elastic.co/guide/en/kibana/3.0/snippets/shakespeare.json"
-
 ES1_NODE=$(docker inspect --format='{{.Node.IP}}' es-1)
 ES1_PORT=$(docker inspect --format='{{(index (index .NetworkSettings.Ports "9200/tcp") 0).HostPort}}' es-1)
 
 echo "Connect to BigDesk with:     http://$ES1_NODE:$ES1_PORT/_plugin/bigdesk/"
 echo "Connect to Paramedic with:   http://$ES1_NODE:$ES1_PORT/_plugin/paramedic/"
-echo "Upload the testdata from swarm-1 with: "
-echo "curl -s -XPOST http://$ES1_NODE:$ES1_PORT/_bulk --data-binary @shakespeare.json"
 
 echo "Finished"

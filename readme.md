@@ -9,12 +9,14 @@ This is a pure airport hack. Please don't make me responsible if something goes 
 Suggestions are always welcome.
 
 # Thanks too...
-This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee) and the nice [Elasticsearch SRV plugin](https://github.com/github/elasticsearch-srv-discovery). 
+This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee) and thanks to [Chris Wendt](https://github.com/chrismwendt) for the nice [Elasticsearch SRV plugin](https://github.com/github/elasticsearch-srv-discovery). 
 
 # Creating Swarm Cluster
 
+**Hint:**
+If you're running on *boot2docker* (VirtualBox) you have to change some parameters in the shell scripts, especially the parameter for the interface name.
 
-This is done by calling the shell script `create_swarm.sh`. Please check the variables, inline comments and path to the docker binaries. 
+Creating the Swarm cluster is done by calling the shell script `create_swarm.sh`. Please check the variables, inline comments and path to the docker binaries. 
 On OS X or Windows you should install the latest Docker Toolbox or install manually the binaries.
 
 In addition, you need, if you don't change the settings to use boot2docker / VirtualBox, a DigitalOcean API token. If you don't have a DO account already you can contact me for a $10 promo code.
@@ -97,12 +99,13 @@ Now, lets play with Elasticsearch.
 
 Again, we can do this task with a small shell script called `es_cluster.sh`. This will create 9 Elasticsearch containers and the data will be splitted into 8 shards and replicated 8 times (this is a setup which you really not use in a production environment).
 You can change the amount of elasticsearch nodes, replicas and shards in the script. The used Elasticsearch version is currently 1.7.3 due to the incompatibility of Bigdesk with current Elasticsearch 2.x.
-This script installs two Elasticsearch Plugins, too:
+This script installs several Elasticsearch Plugins, too:
 
-* BigDesk ([Homepage](http://bigdesk.org))
-* Paramedic ([Homepage](https://github.com/karmi/elasticsearch-paramedic))
+* BigDesk ([Homepage](http://bigdesk.org)), only on node es-1
+* Paramedic ([Homepage](https://github.com/karmi/elasticsearch-paramedic)), only on node es-1
+* elasticsearch-srv-discovery ([Homepage](https://github.com/github/elasticsearch-srv-discovery)), on each elasticsearch node. 
 
-In addition, on each elasticsearch node the `elasticsearch-srv-discovery` plugin will be installed. This plugin is used to retrieve the data about all nodes in the cluster. They get registered during startup by the shell script using the Consul REST API. 
+The `elasticsearch-srv-discovery` plugin is used to retrieve the coordinates of all elasticsearch nodes from Consul, using it as a service discovery system. The nodes get registered during startup by the shell script using the Consul REST API. The plugin itself uses DNS SRV requests (see [RFC 2782](https://tools.ietf.org/html/rfc2782)) to retrieve the data from Consul. In our case, we tell the plugin to use TCP because UDP requests will return only three results (this should indeed not be a problem). 
 
 Now, lets start the Elasticsearch cluster:
 
@@ -112,25 +115,33 @@ Sending request to create es-1 now...
 f40943f58df8ba789019eebeb34e6861b74b5c9c7d95b70b19c8543a5e263e6c
 Installing bigdesk
 [...]
-2015-11-15 06:08:26 (7.42 MB/s) - ‘shakespeare.json’ saved [25216068/25216068]
-
+Sending request to create es-9 now...
+6705ad861c58953318fd3eb06d2c0515ac11eb2626815c481892637d2decb558
+IP of es-9 is 10.0.0.10
+Registering node in Consul
+true
 Connect to BigDesk with:     http://46.101.151.9:32783/_plugin/bigdesk/
 Connect to Paramedic with:   http://46.101.151.9:32783/_plugin/paramedic/
-Upload testdata from swarm-1 with: 
-curl -s -XPOST http://46.101.151.9:32783/_bulk --data-binary @shakespeare.json
 Finished
 
 ```
 
-This script downloads a JSON file with test data from Elasticsearch into the Docker node swarm-1 and prints out the information how to connect to the installed plugins.
+Now the elasticsearch cluster is ready to index data.
+For your convenience, there is already a small shell script, too: `import-testdata.sh`.
+This script downloads a JSON file with test data from Elasticsearch into the Docker node swarm-1 and imports the data into elasticsearch, using the bulk import REST interface on elasticsearch node es-1.
 
-Now, we can load the test data into Elasticsearch. For this, connect into the Docker host swarm-1 with Docker Machine:
 
 ```
-$ docker-machine ssh swarm-1
+$ ./import-testdata.sh
+Setting up docker environment to connect to swarm...
+Retrieving information about elasticsearch node es-1...
+Downloading test data to node swarm-1...
+...
+Uploading the testdata on swarm node swarm-1 into elasticsearch node es-1...
+Finished importing test data!
+#
 ```
 
-Now you can execute the upload and indexing of the test data with *curl* as printed out at the end of the script.
 
 # Deprovision
 
