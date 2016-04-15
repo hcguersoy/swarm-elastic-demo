@@ -11,6 +11,13 @@ Suggestions are always welcome.
 # Thanks too...
 This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee) and thanks to [Chris Wendt](https://github.com/chrismwendt) for the nice [Elasticsearch SRV plugin](https://github.com/github/elasticsearch-srv-discovery). 
 
+# Prerequisits
+This version of the demo is tested with
+
+* Docker 1.11.0
+* Docker Machine 0.7.0
+* Docker Swarm 1.2.0
+
 # Creating Swarm Cluster
 
 **Hint:**

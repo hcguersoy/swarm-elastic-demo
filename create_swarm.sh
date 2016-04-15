@@ -37,7 +37,7 @@ BIND_INTERFACE=eth0
 
 # which Swarm version has to be installed?
 # Check the Swarm releases page on Github ()
-SWARM_IMAGE="swarm:1.0.1"
+SWARM_IMAGE="swarm:1.2.0"
 
 # use this with virtualbox if you use your own boot2docker image and comment out the next line
 # DRIVER_SPECIFIC_VB="--driver virtualbox --virtualbox-boot2docker-url=$BOOT2DOCKER_IMAGE --virtualbox-memory=$VB_DEFAULT_MEM"
