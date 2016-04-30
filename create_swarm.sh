@@ -7,7 +7,7 @@ DOCKER=/usr/local/bin/docker
 DOCKER_MACHINE=/usr/local/bin/docker-machine
 
 # possible regions for DigitalOcean... fra1, ams1..ams3, lon1, nyc1..nyc3 and more
-DIGITAL_OCEAN_REGION=fra1
+DIGITAL_OCEAN_REGION=ams3
 
 # possible: ubuntu-15-04-x64, ubuntu-15-10-x64, debian-8-x64
 # be arware that you need Kernel >= 3.16, so Ubuntu 14.04 will not work due to Kernel
@@ -67,11 +67,18 @@ $DOCKER $(docker-machine config consul) run \
                                        -d \
                                        -p 8500:8500 \
                                        -p 8400:8400 \
-                                       -p ${CONSUL_PORT_UDP}:53/udp \
-                                       -p ${CONSUL_PORT_TCP}:53/tcp \
+                                       -p ${CONSUL_PORT_UDP}:8600/udp \
+                                       -p ${CONSUL_PORT_TCP}:8600/tcp \
                                        -h consul \
-                                       progrium/consul -server -bootstrap-expect 1 -ui-dir /ui \
+                                       --name consul \
+                                       gliderlabs/consul-server:latest -bootstrap-expect 1 \
                                        || { echo 'Installation of Consul failed' ; exit 1; }
+
+# retrieving consul IP
+echo "==> Retrieving Consul IP"
+CONSUL_IP=$(docker-machine ip consul)
+echo "==> Consul runs on $CONSUL_IP"
+echo "====> Access to Consul UI via http://${CONSUL_IP}:8500/ui"
 
 echo "==> Creating a node for swarm master and starting it..."
 docker-machine create \
@@ -80,34 +87,38 @@ docker-machine create \
     --swarm \
     --swarm-image=$SWARM_IMAGE \
     --swarm-master \
-    --swarm-discovery="consul://$(docker-machine ip consul):8500" \
+    --swarm-discovery="consul://${CONSUL_IP}:8500" \
     --engine-opt="cluster-advertise=$BIND_INTERFACE:2376" \
-    --engine-opt="cluster-store=consul://$(docker-machine ip consul):8500" \
+    --engine-opt="cluster-store=consul://${CONSUL_IP}:8500" \
+    --engine-label="node=swarm-1" \
     swarm-1 || { echo 'Creation of Swarm Manager Node failed' ; exit 1; }
 
 echo "==> Creating now all other nodes in parallel ..."
 for ((node=2; node<=$AMMOUNT_NODES; node++))
 do
-    echo "Sending request to create node-$node now"
+    echo "====> Sending request to create swarm-$node now"
     $DOCKER_MACHINE create \
         $DRIVER_DEFINITION \
         --engine-install-url=$DOCKER_INSTALL_URL \
         --swarm \
         --swarm-image=$SWARM_IMAGE \
-        --swarm-discovery="consul://$(docker-machine ip consul):8500" \
+        --swarm-discovery="consul://${CONSUL_IP}:8500" \
         --engine-opt="cluster-advertise=$BIND_INTERFACE:2376" \
-        --engine-opt="cluster-store=consul://$(docker-machine ip consul):8500" \
+        --engine-opt="cluster-store=consul://${CONSUL_IP}:8500" \
+        --engine-label="node=swarm-${node}" \
         swarm-$node &
 done
 
 # wait until all nodes have been created
 wait
 
-echo "Creating overlay network"
+echo "==> set the docker coordinates"
 eval $(docker-machine env --swarm swarm-1)
+
+echo "==> Creating overlay network"
 $DOCKER network create -d overlay multihost
 
-echo "Access to Consul UI via http://$(docker-machine ip consul):8500/ui"
+echo "Access to Consul UI via http://${CONSUL_IP}:8500/ui"
 
 echo " **** Finished creating VMs and setting up Docker Swarm ****  "
 

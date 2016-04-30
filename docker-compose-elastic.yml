@@ -1,0 +1,50 @@
+# supported starting with Compose 1.6.0 and Docker 1.10.0
+# this assumes that on containers eth0 the overlay network interface is running
+# and consul gets IP 10.0.0.2 assigned
+version: '2'
+services:
+  consul:
+      image: gliderlabs/consul-server:latest
+      container_name: discoverer
+      environment:
+        - "constraint:node==swarm-1"
+      command: -bootstrap-expect 1 -advertise 10.0.0.2
+      ports: 
+           - "8500:8500"
+           - "8400:8400"
+           - "8600:8600/tcp"
+      networks:
+        - default      
+  esnode:
+      image: ${ELASTIC_IMAGE}
+      ports:
+          - 9200
+          - 9300      
+      command: /bin/bash -c "ES_IP=$$(ip addr | awk '/inet/ && /eth0/{sub(/\/.*$$/,\"\",$$2); print $$2}') &&
+                echo My IP is $$ES_IP &&
+                CONSDATA='{\"Node\":\"'$${HOSTNAME}'\",\"Address\":\"'$$ES_IP'\",\"Service\":{\"ID\":\"elastic-'$${HOSTNAME}'\",\"Service\":\"elastic\",\"ServiceAddress\":\"'$${ES_IP}'\",\"Port\":9300}}' &&
+                echo \"Data to send to Consul to register service $$CONSDATA \" &&
+                curl -X PUT -d $$CONSDATA http://discoverer:8500/v1/catalog/register &&
+                plugin install lukas-vlcek/bigdesk/2.5.0 || { echo Error installing plugin. Maybe it is allready installed. ;} &&
+                plugin install karmi/elasticsearch-paramedic || { echo Error installing plugin. Maybe it is allready installed. ;} &&
+                plugin install srv-discovery --url https://github.com/github/elasticsearch-srv-discovery/releases/download/1.5.1/elasticsearch-srv-discovery-1.5.1.zip  || { echo Error installing plugin. Maybe it is allready installed. ;} &&
+                elasticsearch \
+                -Des.cluster.name=swarmones \
+                -Des.node.name=$${HOSTNAME}
+                -Des.discovery.zen.ping.multicast.enabled=false \
+                -Des.network.host=0.0.0.0 \
+                -Des.index.number_of_shards=8 \
+                -Des.index.number_of_replicas=8 \
+                -Des.discovery.type=srv \
+                -Des.discovery.srv.query=${SRV_DISCOVERY_QUERY} \
+                -Des.discovery.srv.servers=discoverer:8600 \
+                -Des.discovery.srv.protocol=tcp \
+                -Des.logger.discovery=TRACE"
+      depends_on:
+        - consul
+      networks:
+        - default
+networks:
+  default:
+    external:
+      name: multihost
