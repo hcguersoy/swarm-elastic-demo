@@ -6,7 +6,7 @@ DOCKER_COMPOSE=/usr/local/bin/docker-compose
 DOCKER_COMPOSE_FILE=./docker-compose-elastic.yml
 
 # How many additional es nodes should be started?
-AMOUNT_ADDITIONAL_NODES=3
+AMOUNT_ADDITIONAL_NODES=8
 
 
 # The image to use in this test.
