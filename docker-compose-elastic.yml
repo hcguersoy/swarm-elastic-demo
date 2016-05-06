@@ -14,7 +14,7 @@ services:
            - "8400:8400"
            - "8600:8600/tcp"
       networks:
-        - default      
+        - elasticnet      
   esnode:
       image: ${ELASTIC_IMAGE}
       ports:
@@ -40,11 +40,13 @@ services:
                 -Des.discovery.srv.servers=discoverer:8600 \
                 -Des.discovery.srv.protocol=tcp \
                 -Des.logger.discovery=TRACE"
+      environment:
+        - "reschedule:on-node-failure"
+      restart: always
       depends_on:
         - consul
       networks:
-        - default
+        - elasticnet
 networks:
-  default:
-    external:
-      name: multihost
+  elasticnet:
+    driver: overlay
