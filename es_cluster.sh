@@ -8,7 +8,6 @@ DOCKER_COMPOSE_FILE=./docker-compose-elastic.yml
 # How many additional es nodes should be started?
 AMOUNT_ADDITIONAL_NODES=8
 
-
 # The image to use in this test.
 # If you wan't to use a 2.x image BigDesk will not run
 export ELASTIC_IMAGE="elasticsearch:1.7.3"
