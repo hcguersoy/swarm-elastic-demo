@@ -36,8 +36,8 @@ DOCKER_INSTALL_URL="https://get.docker.com"
 BIND_INTERFACE=eth0
 
 # which Swarm version has to be installed?
-# Check the Swarm releases page on Github ()
-SWARM_IMAGE="swarm:1.2.2-rc1"
+# Check the Swarm releases page on Github (https://github.com/docker/swarm/releases)
+SWARM_IMAGE="swarm:1.2.4"
 
 # use this with virtualbox if you use your own boot2docker image and comment out the next line
 # DRIVER_SPECIFIC_VB="--driver virtualbox --virtualbox-boot2docker-url=$BOOT2DOCKER_IMAGE --virtualbox-memory=$VB_DEFAULT_MEM"
@@ -71,7 +71,7 @@ $DOCKER $(docker-machine config consul) run \
                                        -p ${CONSUL_PORT_TCP}:8600/tcp \
                                        -h consul \
                                        --name consul \
-                                       gliderlabs/consul-server:latest -bootstrap-expect 1 \
+                                       gliderlabs/consul-server:0.6 -bootstrap-expect 1 \
                                        || { echo 'Installation of Consul failed' ; exit 1; }
 
 # retrieving consul IP

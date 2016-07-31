@@ -11,6 +11,7 @@ AMOUNT_ADDITIONAL_NODES=8
 # The image to use in this test.
 # If you wan't to use a 2.x image BigDesk will not run
 export ELASTIC_IMAGE="elasticsearch:1.7.3"
+export CONSUL_IMAGE="gliderlabs/consul-server:0.6"
 export SRV_DISCOVERY_VERSION=1.5.1
 
 export SRV_DISCOVERY_QUERY=elastic.service.consul

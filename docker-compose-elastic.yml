@@ -4,7 +4,7 @@
 version: '2'
 services:
   consul:
-      image: gliderlabs/consul-server:latest
+      image: ${CONSUL_IMAGE}
       container_name: discoverer
       environment:
         - "constraint:node==swarm-1"

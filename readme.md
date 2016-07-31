@@ -14,9 +14,19 @@ This demo was inspired by a Gist from [Thomas Barlow](https://github.com/tombee)
 # Prerequisites
 This version of the demo is tested with
 
-* Docker 1.11.1
-* Docker Machine 0.7.0
-* Docker Swarm 1.2.2-rc1    
+* Docker 1.12.0
+* Docker Machine 0.8.0
+* Docker Swarm 1.2.4  
+
+## Some words on Swarm
+There are now three *Docker Swarm* flavors around:
+
+* the old known Docker Swarm (see [https://docs.docker.com/swarm]())
+* the new Swarm Mode (see [https://docs.docker.com/engine/swarm/]())
+* the SwarmKit (see [https://github.com/docker/swarmkit]())
+
+In this demo the first, old Swarm, is (currently) used.
+
 
 # Creating Swarm Cluster
 
@@ -28,7 +38,7 @@ On OS X or Windows you should install the latest Docker Toolbox or install manua
 
 In addition, you need, if you don't change the settings to use boot2docker / VirtualBox, a DigitalOcean API token. If you don't have a DO account already you can contact me for a $10 promo code.
 
-The `create_swarm.sh` script needs several minutes, depending on the load on Digital Ocean. I useally use the datacenters `ams3` or `fra1`.
+The `create_swarm.sh` script needs several minutes, depending on the load on Digital Ocean. I usually use the data-centers `ams3` or `fra1`.
 
 ```
 $ ./create_swarm.sh
@@ -111,14 +121,14 @@ Now, lets play with Elasticsearch.
 **Attention:** You should never, **never** use this setup for a productive environment. You're warned!
 
 Again, we can do this task with a small shell script called `es_cluster.sh` which itself uses Docker Compose. This will create 8 Elasticsearch containers (see the variable `AMOUNT_ADDITIONAL_NODES`) and the data will be splitted into 8 shards and replicated 8 times (this is a setup which you really not use in a production environment). In addition, in the compose file `docker-compose-elastic.yml` a Consul service is defined which is needed for the discovery.
-You can change the amount of elasticsearch nodes, replicas and shards in the script. The used Elasticsearch version is currently 1.7.3 due to the incompatibility of Bigdesk with current Elasticsearch 2.x.
+You can change the amount of elasticsearch nodes, replicas and shards in the script. The used Elasticsearch version is currently 1.7.3 due to the incompatibility of the used plugins with Elasticsearch 2.x (see [#TODO](#TODO)).
 This script installs several Elasticsearch Plugins, too:
 
 * BigDesk ([Homepage](http://bigdesk.org))
 * Paramedic ([Homepage](https://github.com/karmi/elasticsearch-paramedic))
 * elasticsearch-srv-discovery ([Homepage](https://github.com/github/elasticsearch-srv-discovery)) 
 
-The `elasticsearch-srv-discovery` plugin is used to retrieve the coordinates of all already provisioned elasticsearch nodes from Consul (which is created by Docker Compose, too), using it as a service discovery system. The nodes register themselve using the Consul REST API (take a look at the `command` part for the `elastic`-Service. The plugin itself uses DNS SRV requests (see [RFC 2782](https://tools.ietf.org/html/rfc2782)) to retrieve the data from Consul. In our case, we tell the plugin to use TCP because UDP requests will return only three results and may result in seperated clusters (even the probability is realy low). 
+The `elasticsearch-srv-discovery` plugin is used to retrieve the coordinates of all already provisioned elasticsearch nodes from Consul (which is created by Docker Compose, too), using it as a service discovery system. The nodes register themselves using the Consul REST API (take a look at the `command` part for the `elastic`-Service. The plugin itself uses DNS SRV requests (see [RFC 2782](https://tools.ietf.org/html/rfc2782)) to retrieve the data from Consul. In our case, we tell the plugin to use TCP because UDP requests will return only three results and may result in separated clusters (even the probability is really low). 
 
 Now, lets start the Elasticsearch cluster:
 
@@ -162,8 +172,10 @@ Use the script `rm-swarm.sh` to remove all created Docker machines but take care
 
 In addition, you can use the script `rm_es_cluster.sh` to remove only the elasticsearch containers and deregister them.
 
-# TODO
+# <a name="TODO"></a>TODO
 * Show resheduling of containers with Docker Swarm (have to wait for [SWARM #2149](https://github.com/docker/swarm/issues/2149) and [SWARM #2133](https://github.com/docker/swarm/issues/2133))
+* Switch to Swarm mode or SwarmKit as soon as they are supported by Docker Machine
+* Switch to an actual Elasticsearch version (e.g 2.4.3) as soon as the SRV plugin supports Elasticsearch 2.x. (see [elasticsearch-srv-discovery #24](https://github.com/github/elasticsearch-srv-discovery/issues/24))
 
 # License
 
